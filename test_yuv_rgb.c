@@ -441,6 +441,10 @@ int main(int argc, char **argv)
 				out, "std", iteration_number, yuv420_rgb24_std);
 			test_yuv2rgb(width, height, Y, U, V, width, (width+1)/2, RGB, width*3, yuv_format, 
 				out, "sse2_unaligned", iteration_number, yuv420_rgb24_sseu);
+#if USE_ACCELERATE
+			test_yuv2rgb(width, height, Y, U, V, width, (width+1)/2, RGB, width*3, yuv_format, 
+				out, "accelerate", iteration_number, yuv420_rgb24_accelerate);
+#endif
 #if USE_FFMPEG
 			test_yuv2rgb(width, height, Y, U, V, width, (width+1)/2, RGB, width*3, yuv_format, 
 				out, "ffmpeg_unaligned", iteration_number, yuv420_rgb24_ffmpeg);

@@ -9,6 +9,8 @@ if(USE_FFMPEG)
 	add_definitions(-DUSE_FFMPEG=1)
 endif(USE_FFMPEG)
 
+set(USE_ACCELERATE FALSE CACHE BOOL "Enable Accelerate framework")
+
 set(USE_IPP FALSE CACHE BOOL "Enable IPP")
 if(USE_IPP)
 	set(IPP_ROOT /opt/intel CACHE PATH "IPP install path")
@@ -29,3 +31,10 @@ if(USE_IPP)
 	target_link_libraries(test_yuv_rgb ippcc)
 endif(USE_IPP)
 
+if(USE_ACCELERATE)
+    add_definitions(-DUSE_ACCELERATE=1)
+    find_library(ACCELERATE_FRAMEWORK
+        NAMES Accelerate
+    )
+    target_link_libraries(test_yuv_rgb ${ACCELERATE_FRAMEWORK})
+endif(USE_ACCELERATE)

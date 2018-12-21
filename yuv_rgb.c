@@ -7,6 +7,10 @@
 
 #include <stdio.h>
 
+#if USE_ACCELERATE
+#include <Accelerate/Accelerate.h>
+#endif
+
 
 uint8_t clamp(int16_t value)
 {
@@ -251,6 +255,85 @@ void yuv420_rgb24_std(
 		}
 	}
 }
+
+#if USE_ACCELERATE
+void yuv420_rgb24_accelerate(
+	uint32_t width, uint32_t height, 
+	const uint8_t *Y, const uint8_t *U, const uint8_t *V, uint32_t Y_stride, uint32_t UV_stride, 
+	uint8_t *RGB, uint32_t RGB_stride, 
+	YCbCrType yuv_type)
+{
+    // Y
+    vImage_Buffer y_buf = {
+        .data = (void*)Y,
+        .height = height,
+        .width = width,
+        .rowBytes = Y_stride,
+    };
+
+    // U
+    vImage_Buffer u_buf = {
+        .data = (void*)U,
+        .height = height/2,
+        .width = width/2,
+        .rowBytes = UV_stride,
+    };
+    // V
+    vImage_Buffer v_buf = {
+        .data = (void*)V,
+        .height = height/2,
+        .width = width/2,
+        .rowBytes = UV_stride,
+    };
+
+    // RGB
+    vImage_Buffer rgb_buf = {
+    	.data = (void*)RGB,
+    	.height = height,
+    	.width = width,
+    	.rowBytes = RGB_stride,
+    };
+
+    // Temporary buffer
+    vImage_Buffer buf;
+    vImageBuffer_Init(&buf, height, width, 32, kvImageNoFlags);
+
+    vImage_YpCbCrPixelRange pixelRange = {
+        .Yp_bias = 16,
+        .CbCr_bias =  128,
+        .YpRangeMax = 235,
+        .CbCrRangeMax = 240,
+        .YpMax = 255,
+        .YpMin = 0,
+        .CbCrMax = 255,
+        .CbCrMin = 0,
+    };
+
+    const vImage_YpCbCrToARGBMatrix *matrix;
+
+    switch (yuv_type) {
+    	case YCBCR_601:
+    		matrix = kvImage_YpCbCrToARGBMatrix_ITU_R_601_4; break;
+    	case YCBCR_709:
+    		matrix = kvImage_YpCbCrToARGBMatrix_ITU_R_709_2; break;
+    	case YCBCR_JPEG:
+    		assert(!!"YCBCR_JPEG unsupported by Accelerate framework");
+
+    	default:
+    		matrix = kvImage_YpCbCrToARGBMatrix_ITU_R_601_4;
+    		assert(0);
+    }
+
+	vImage_YpCbCrToARGB outInfo;
+    vImageConvert_YpCbCrToARGB_GenerateConversion(matrix, &pixelRange, &outInfo, kvImage420Yp8_Cb8_Cr8, kvImageARGB8888, kvImageNoFlags);
+    
+	const uint8_t permuteMap[4] = {1, 2, 3, 0}; // R G B A
+    vImageConvert_420Yp8_Cb8_Cr8ToARGB8888(&y_buf, &u_buf, &v_buf, &rgb_buf, &outInfo, permuteMap, 255, kvImageNoFlags);
+
+    vImageConvert_RGBA8888toRGB888(&buf, &rgb_buf, kvImageNoFlags);
+    free(buf.data);
+}
+#endif
 
 void nv12_rgb24_std(
 	uint32_t width, uint32_t height, 

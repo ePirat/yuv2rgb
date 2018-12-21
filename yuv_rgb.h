@@ -50,6 +50,13 @@ void nv21_rgb24_std(
 	uint8_t *rgb, uint32_t rgb_stride,
 	YCbCrType yuv_type);
 
+// yuv to rgb, accelerate implementation
+void yuv420_rgb24_accelerate(
+	uint32_t width, uint32_t height, 
+	const uint8_t *y, const uint8_t *u, const uint8_t *v, uint32_t y_stride, uint32_t uv_stride, 
+	uint8_t *rgb, uint32_t rgb_stride, 
+	YCbCrType yuv_type);
+
 // yuv to rgb, sse implementation
 // pointers must be 16 byte aligned, and strides must be divisable by 16
 void yuv420_rgb24_sse(
